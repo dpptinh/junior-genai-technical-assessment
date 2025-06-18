@@ -261,9 +261,9 @@ title: rag_and_reasoning_frameworks_tutorial
 
 In Retrieval-Augmented Generation (RAG) architecture, **chunking** (text segmentation) is a key data preprocessing stage. This process involves dividing source documents into smaller, more manageable units of information called "chunks". The main goals of chunking are:
 
-1.  **Compatibility with LLM's Context Window:** Each chunk must be appropriately sized to fit the input token limit of the Large Language Model (LLM).
-2.  **Preserving Semantic Integrity:** Chunks need to maintain the core meaning and context of the original text. Arbitrary splitting can disrupt the logical flow and degrade information quality.
-3.  **Optimization for Information Retrieval:** In RAG, chunks are vectorized (via embedding models) and indexed. An effective chunking strategy will create chunks with high semantic cohesion, helping the system accurately retrieve the most relevant text segments for the user's query.
+- **Compatibility with LLM's Context Window:** Each chunk must be appropriately sized to fit the input token limit of the Large Language Model (LLM).
+- **Preserving Semantic Integrity:** Chunks need to maintain the core meaning and context of the original text. Arbitrary splitting can disrupt the logical flow and degrade information quality.
+- **Optimization for Information Retrieval:** In RAG, chunks are vectorized (via embedding models) and indexed. An effective chunking strategy will create chunks with high semantic cohesion, helping the system accurately retrieve the most relevant text segments for the user's query.
 
 The choice of an appropriate chunking strategy directly impacts the performance, accuracy, and computational efficiency of the entire RAG system. This document will detail common and advanced chunking methods.
 
@@ -272,7 +272,7 @@ The choice of an appropriate chunking strategy directly impacts the performance,
 ### Common Chunking Strategies
 
 <details open>
-<summary>Details on chunking strategies</summary>
+<summary>Overview of Chunking Techniques for Document Processing</summary>
 
 ---
 #### Fixed-Size Chunking
@@ -553,8 +553,8 @@ base_chunks_embedding = torch.stack(base_chunks_embedding)  # Convert list of em
 ```
 **Technical Explanation of the Code Snippet:**
 The core idea is to create embedding vectors for each `base_chunk` (e.g., each sentence) such that they not only represent the semantics of that sentence alone but also reflect its position and role within the context of the entire document. This is achieved by:
-1.  **Global Embedding:** Processing the entire document to obtain embedding vectors for each token within that document (`doc_token_embeddings`). Each of these token embeddings has been "informed" (contextualized) by its surrounding tokens in the entire document.
-2.  **Mapping and Pooling:** For each `base_chunk`, identify the corresponding tokens in `doc_token_embeddings`. Then, extract these token vectors and apply a pooling operation (e.g., mean pooling) to create a single embedding vector for that `base_chunk`. This resulting vector is expected to be semantically richer than embedding each chunk independently.
+ - **Global Embedding:** Processing the entire document to obtain embedding vectors for each token within that document (`doc_token_embeddings`). Each of these token embeddings has been "informed" (contextualized) by its surrounding tokens in the entire document.
+- **Mapping and Pooling:** For each `base_chunk`, identify the corresponding tokens in `doc_token_embeddings`. Then, extract these token vectors and apply a pooling operation (e.g., mean pooling) to create a single embedding vector for that `base_chunk`. This resulting vector is expected to be semantically richer than embedding each chunk independently.
 
 ---
 </details>
@@ -1208,9 +1208,9 @@ Text chunking is a fundamental component with a significant impact on the perfor
 - **Question:**
     - "Which organization did the founder of the company that acquired DeepMind previously work for?"
 - **Reasoning Required:**
-    - 1. Who acquired DeepMind? → Google
-    - 2. Who founded Google? → Larry Page
-    - 3. Where did Larry Page previously work? → Stanford Research Lab
+    - Who acquired DeepMind? → Google
+    - Who founded Google? → Larry Page
+    - Where did Larry Page previously work? → Stanford Research Lab
     
     ⟶ Clearly, the answer requires *multiple steps of retrieval, analysis, and inference*.
 
@@ -1411,9 +1411,9 @@ Text chunking is a fundamental component with a significant impact on the perfor
 #### Integrating Techniques in an Advanced RAG Pipeline
 - In a multi-hop reasoning process, each intermediate step or the final result can be fact-checked.
 - An advanced RAG pipeline might integrate these techniques in a logical sequence:
-    - 1. **Receive a complex question.**
-    - 2. **(Multi-hop Reasoning - Decomposition):** If the question is complex, decompose it into sub-questions.
-    - 3. **For each question (or sub-question):**
+    - **Receive a complex question.**
+    - **(Multi-hop Reasoning - Decomposition):** If the question is complex, decompose it into sub-questions.
+    - **For each question (or sub-question):**
         - a. **Retrieval:** Fetch relevant chunks from the vector database.
         - b. **Augmentation:** Prepare a prompt with the question and retrieved context.
         - c. **Generation:** LLM generates an answer.
