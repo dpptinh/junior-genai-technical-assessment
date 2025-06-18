@@ -16,7 +16,6 @@ title: rag_and_reasoning_frameworks_tutorial
 - This helps the model produce **more accurate, up-to-date, and context-aware** responses.
 
 
-
 ### ⚙️ Core Components
 
 
@@ -461,7 +460,7 @@ The choice of an appropriate chunking strategy directly impacts the performance,
 -   Tasks requiring extremely high precision information extraction, logical reasoning, or in advanced research applications.
 -   When computational cost is not a primary constraint and high-detail chunk quality is a top priority.
 
-**Implementation with LangChain (Conceptual Illustration):**
+**Implementation with LangChain:**
 ```python
 # Requires installation: pip install langchain-openai
 import os
@@ -488,7 +487,7 @@ agentic_chunks = [chunk.strip() for chunk in raw_chunks if chunk.strip()]
 
 ---
 
-#### Late Chunking - Emerging Concept
+#### Late Chunking
 
 **Overview and Mechanism:**
 -   An emerging technique where detailed chunking does not occur entirely in the initial preprocessing step.
@@ -518,7 +517,7 @@ import torch
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # Use a popular embedding model, replace if needed
-embedding_model_name = 'hiieu/halong_embedding'
+embedding_model_name = ', jina-embeddings-v3'
 try:
     embedding_model = SentenceTransformer(embedding_model_name, device=device)
 except Exception as e:
@@ -606,7 +605,374 @@ There is no "one-size-fits-all" chunking strategy. The choice depends on the fol
 ---
 </details>
 
-
 ### Conclusion
-
 Text chunking is a fundamental component with a significant impact on the performance of Retrieval-Augmented Generation systems. Understanding the nature, pros, and cons of each strategy, along with the ability to implement them, allows developers to optimize the data processing pipeline for LLMs.
+
+---
+</details>
+
+---
+## 🧠 Reasoning Frameworks
+<details open>
+<summary>Reasoning frameworks for LLMs</summary>
+
+### Why is Reasoning Needed?
+<details - open>
+<summary>Explaining the concept, necessity, and role of reasoning frameworks</summary>
+
+---
+#### What are reasoning frameworks and why are they necessary?
+
+- **Reasoning frameworks** focus on the ability to infer, draw logical conclusions, understand relationships, and evaluate arguments based on retrieved data or existing knowledge.
+- They help models handle complex tasks such as multi-step reasoning, solving questions that require deep inference, or performing logical tasks like programming.
+
+#### Why are reasoning frameworks necessary?
+
+- **Improve accuracy and reliability:**
+    - Reasoning frameworks help models not only answer based on retrieved data but also reason to provide more accurate answers, especially for complex or multi-step questions.
+- **Handle complex tasks:**
+    - Some tasks, like multi-hop question answering, logical reasoning, or strategic analysis, require advanced reasoning capabilities that standard RAG models may not possess.
+- **Minimize errors and hallucination:**
+    - Reasoning helps verify and cross-reference information, limiting errors caused by model imagination or flawed inference.
+- **Increase explainability:**
+    - Reasoning models can provide reasoning steps or chains of thought, helping users understand how the model arrived at an answer, thereby increasing transparency and the interpretability of results.
+
+#### Relationship between RAG and reasoning frameworks
+
+- RAG and reasoning frameworks can be combined to create AI systems that can both accurately retrieve information from external data and perform logical reasoning on that data.
+- For example, the Chain-of-Retrieval Augmented Generation (CoRAG) model combines retrieval chains and reasoning to improve performance in multi-hop question answering tasks, outperforming traditional single-step methods[5].
+
+#### Reasoning Frameworks as a Bridge:
+- They provide structures and processes for LLMs to:
+    - **Decompose:** Break down complex problems into more manageable parts.
+    - **Strategize:** Identify the necessary steps to solve the problem.
+    - **Interact:** Actively seek more information (e.g., through RAG) or use other tools as needed.
+    - **Synthesize:** Combine information from multiple sources and reasoning steps to form an answer or solution.
+    - **Self-critique/Self-correct:** Recognize when a line of thought is ineffective and adjust accordingly.
+
+---
+</details>
+
+### Some Popular Reasoning Frameworks
+<details - open>
+<summary>Overview of popular reasoning frameworks and illustrative examples</summary>
+
+---
+#### Chain-of-Thought (CoT) Prompting
+
+- **Chain-of-Thought Prompting (CoT Prompting)** is a technique in artificial intelligence, particularly with Large Language Models (LLMs), designed to guide AI to think and present its problem-solving process step-by-step, rather than just providing the final answer immediately.
+- This method helps the model break down complex problems into intermediate steps, increasing the transparency and accuracy of the results, while also helping users better understand how the AI reasons.
+
+- **Types of CoT Prompting, Examples, and Explanations:**
+
+    - **Zero-Shot CoT Prompting**
+        - **Definition:** Zero-shot CoT is a technique where you simply add an instruction like "Let's think step by step" to the end of the prompt, without providing any illustrative examples. The model will automatically break down the problem and present its reasoning steps.
+        - **Example:**
+            - Prompt:
+            ```
+            Q: I have 10 apples, I give 2 to my neighbor, 2 to the repairman, buy 5 more, and eat 1. How many apples do I have left?
+            A: Let's think step by step.
+            ```
+            - Model Output:
+            - Start with 10 apples.
+            - Give 2 to the neighbor, 8 apples left.
+            - Give 2 to the repairman, 6 apples left.
+            - Buy 5 more, now have 11 apples.
+            - Eat 1 apple, 10 apples left.
+
+    - **Few-Shot CoT Prompting**
+        - **Definition:** Few-shot CoT is a technique where you provide the model with a few illustrative examples of how to solve a problem step-by-step. The model learns this reasoning pattern and applies it to new cases.
+        - **Example:**
+            - Prompt:
+            ```
+            Example 1:
+            Q: There are 15 sailors and 5 passengers on a ship. What is the total number of people on the ship?
+            A: 15 + 5 = 20. There are 20 people on the ship.
+
+            Example 2:
+            Q: I have 8 marbles, I give you 3. How many marbles do I have left?
+            A: 8 - 3 = 5. I have 5 marbles left.
+
+            New question:
+            Q: I have 12 books, I give you 4. How many books do I have left?
+            A:
+            ```
+
+    - **Auto-CoT prompting**
+        - Auto-CoT (Automatic Chain-of-Thought) is a method that automates the process of creating illustrative examples for Chain-of-Thought (CoT) prompting to reduce the manual effort required to prepare diverse and effective examples.
+        - Instead of users manually selecting and writing examples to guide the model's step-by-step thinking, Auto-CoT uses Large Language Models (LLMs) themselves to automatically generate reasoning chains for a diverse selection of questions, thereby building a set of examples to add to the prompt.
+        - Auto-CoT consists of two main stages:
+            - Stage 1: question clustering: uses clustering methods to group questions into clusters.
+            - Stage 2: demonstration sampling: In each cluster, one question is selected, and Zero-shot CoT is used to generate an answer for it. Then, these question-answer pairs are used as few-shot examples for the user's main question.
+        - Example of Auto-CoT (standardized with Zero-shot-CoT)
+            - Suppose you have a set of questions like this:
+                - **Q1**: `3 + 5 - 2 = ?`
+                - **Q2**: `If A is taller than B, and B is taller than C, who is the tallest?`
+                - **Q3**: `7 × 2 + 4 = ?`
+                - **Q4**: `I have 10 apples, I give you 3. How many are left?`
+            - Step 1: Group questions by reasoning type
+                - Auto-CoT will automatically group questions with similar characteristics:
+                    - **Cluster 1 – Arithmetic Calculation**: Q1, Q3, Q4
+                    - **Cluster 2 – Logical Reasoning**: Q2
+            - Step 2: Generate solutions for representative questions using Zero-shot-CoT
+                - **Example Cluster 1 (select Q1):**
+                ```
+                Q: 3 + 5 - 2 = ?
+                A: Let's think step by step.
+                (Output) 3 + 5 = 8. 8 - 2 = 6. So the answer is 6.
+                ```
+                - **Example Cluster 2 (select Q2):**
+                ```
+                Q: If A is taller than B, and B is taller than C, who is the tallest?
+                A: Let's think step by step.
+                (Output) A > B, B > C ⇒ A > C. So A is the tallest.
+                ```
+
+                - Step 3: Use the generated examples as a few-shot prompt for a new question (in Auto-CoT)
+                    - **New question**:
+                    `I have 20 oranges, I give you 7, buy 10 more, and eat 5. How many oranges do I have left?`
+                    - **Complete few-shot prompt:**
+                    ```
+                    Q: 3 + 5 - 2 = ?
+                    A: Let's think step by step.
+                    3 + 5 = 8. 8 - 2 = 6. So the answer is 6.
+
+                    Q: 7 × 2 + 4 = ?
+                    A: Let's think step by step.
+                    7 × 2 = 14. 14 + 4 = 18. So the answer is 18.
+
+                    Q: I have 20 oranges, I give you 7, buy 10 more, and eat 5. How many oranges do I have left?
+                    A: Let's think step by step.
+                    ```
+
+---
+
+#### Self-Consistency
+
+- **Role of `temperature`:**
+    - `temperature` is an LLM parameter that controls the "randomness" or "creativity" of the output.
+    - `temperature = 0`: Output is nearly deterministic, with little variation between runs.
+    - `temperature > 0` (e.g., `0.5` - `1.0`): Output is more diverse; the LLM can explore different phrasings or reasoning paths.
+    - In Self-Consistency, `temperature > 0` is necessary to generate diverse "reasoning paths." If `temperature = 0`, all reasoning paths might be identical, negating the benefit of voting.
+- **Number of reasoning paths (`k` paths):**
+    - Choosing `k` is a balance. A small `k` (e.g., 3-5) might be sufficient to improve performance without excessive cost. A larger `k` might further increase accuracy but computational cost increases linearly.
+    - The optimal `k` value can depend on the specific task and LLM.
+- **How to "vote" (Aggregating Answers):**
+    - **Numerical or simple multiple-choice answers:** Count the frequency of each answer and choose the most common one.
+    - **Free-form text answers:** More challenging.
+        - *Extract entities or main ideas:* Try to normalize answers (e.g., extract keywords, important entities) before voting.
+        - *Use another LLM to "assess similarity":* Group similar answers and choose the largest group.
+        - *Select a representative answer:* If many answers are very similar, one of the most complete answers from that group can be chosen.
+- **Combination with CoT:**
+    - Self-Consistency is often applied *together with* CoT. That is, each of the `k` reasoning paths is a complete CoT chain.
+- **Example of integration with RAG (more detailed):**
+    - **User query:** "Based on product X reviews (RAG retrieved 10 reviews), what are the top 3 pros and 2 cons of this product?"
+    - **Self-Consistency + CoT (with `k=3` paths):**
+        - **Path 1 (LLM with `temp=0.7`, CoT prompt):**
+            - "Let's think step by step. Read 10 reviews.
+            - Review 1: praises A, criticizes B.
+            - Review 2: praises A, praises C.
+            - ...
+            - Review 10: praises D, criticizes B.
+            - Summary: Pros: A (frequent), C, D. Cons: B (frequent)."
+            - *Final Answer (Path 1):* Pros: A, C, D. Cons: B.
+        - **Path 2 (LLM with `temp=0.7`, CoT prompt, possibly different interpretation):**
+            - "Okay, let's break it down. Analyzing reviews...
+            - Feature A is frequently praised for performance. Feature E gets good mentions for design.
+            - Issue B (battery life) is a common complaint. Issue F (price) also noted.
+            - Overall: Strengths: A (performance), E (design), C (ease of use). Weaknesses: B (battery), F (price)."
+            - *Final Answer (Path 2):* Pros: A, E, C. Cons: B, F.
+        - **Path 3 (LLM with `temp=0.7`, CoT prompt):**
+            - "Step-by-step analysis:
+            - Positive points: A (performance), C (ease of use), G (customer support).
+            - Negative points: B (battery), H (software bugs).
+            - So, the main pros are A, C, G and cons are B, H."
+            - *Final Answer (Path 3):* Pros: A, C, G. Cons: B, H.
+        - **Aggregation (Voting for each pro/con):**
+            - Pros:
+                - A: Appears in Path 1, 2, 3 (3 votes)
+                - C: Appears in Path 1, 2, 3 (3 votes)
+                - D: Path 1 (1 vote)
+                - E: Path 2 (1 vote)
+                - G: Path 3 (1 vote)
+            - Cons:
+                - B: Appears in Path 1, 2, 3 (3 votes)
+                - F: Path 2 (1 vote)
+                - H: Path 3 (1 vote)
+        - **Final Aggregated Answer:** Main Pros: A, C (and possibly D/E/G if more than 2 are desired). Main Cons: B (and possibly F/H). (Voting logic may need refinement to select the exact number requested).
+
+---
+
+#### Tree-of-Thought (ToT)
+
+- **Key components and detailed process:**
+    - **Problem Decomposer (Optional):** For very large problems, the first step might be an LLM decomposing the problem into more independent subproblems. Each subproblem can then be solved by a separate ToT.
+    - **Thought Generator:** At each node of the tree, the LLM is prompted to generate `k` thoughts (next steps, potential solutions, or approaches).
+        - *Prompting for Diversity:* The prompt should encourage diversity in the generated thoughts (e.g., "Think of 3 different approaches...").
+    - **State Evaluator:** This is a crucial component. Each generated thought needs to be evaluated to determine its "promise."
+        - *Evaluation methods:*
+            - **LLM as a judge:** Another LLM (or the same LLM with an evaluation prompt) scores or ranks the thoughts. The prompt might include criteria like "feasibility," "progress towards goal," "uniqueness."
+            - **Heuristics or rules:** Pre-programmed rules (e.g., if a thought leads to an invalid state, assign a low score).
+            - **Quick simulation or check:** For some problems, a quick simulation or check can be run to see if the thought leads to a good outcome.
+    - **Search Algorithm:** Decides how to traverse the tree.
+        - **Breadth-First Search (BFS):** Explores all thoughts at one level before going deeper. Memory-intensive but can find the shortest solution.
+        - **Depth-First Search (DFS):** Goes deep into one branch until a leaf is reached or no further progress can be made, then backtracks. Less memory-intensive.
+        - **Beam Search:** Keeps the `b` (beam width) best thoughts at each level and only expands from them. Balances exploration and efficiency.
+    - **Pruning:** Eliminates unpromising branches based on the State Evaluator's assessment to reduce the search space.
+- **Challenges:**
+    - **Very high computational cost:** Generating and evaluating many thoughts at multiple levels is expensive.
+    - **Designing an effective State Evaluator:** This is the hardest part. A poor evaluator can lead to incorrectly pruning promising branches or keeping bad ones.
+    - **Implementation complexity:** Managing the tree, search algorithm, and other components is technically demanding.
+- **Illustration:**
+    - Below is an illustration of ToT and other methods ([image source](https://arxiv.org/pdf/2305.10601)):
+    - ![](ToT_prompting_architecture.png)
+- **Complete Example of Tree of Thoughts (ToT)**
+    - Problem: Solve a multi-step logic puzzle.
+    - **Question:**
+      "You need to find the smallest positive integer that satisfies the following conditions:
+      - When divided by 2, the remainder is 1
+      - When divided by 3, the remainder is 2
+      - When divided by 5, the remainder is 4"
+    - **Solution Steps:**
+      ```
+      Step 2: Generate initial thoughts (first condition)
+
+      The model generates possible numbers based on the first condition (remainder 1 when divided by 2):
+
+      - Thought 1: Numbers like 1, 3, 5, 7, 9, 11, ...
+
+      Step 3: Expand branches with the next condition
+
+      For each number from the previous step, check the second condition (remainder 2 when divided by 3):
+
+      - Branch 1: 1 → 1 % 3 = 1 (does not satisfy) → discard
+      - Branch 2: 3 → 3 % 3 = 0 (does not satisfy) → discard
+      - Branch 3: 5 → 5 % 3 = 2 (satisfies) → keep
+      - Branch 4: 7 → 7 % 3 = 1 (does not satisfy) → discard
+      - Branch 5: 9 → 9 % 3 = 0 (does not satisfy) → discard
+      - Branch 6: 11 → 11 % 3 = 2 (satisfies) → keep
+
+
+      Step 4: Expand branches with the final condition
+
+      Check the third condition (remainder 4 when divided by 5) with the remaining numbers:
+
+      - 5 % 5 = 0 (does not satisfy) → discard
+      - 11 % 5 = 1 (does not satisfy) → discard
+
+      Continue with subsequent numbers that satisfy the first two conditions:
+
+      - 17: 17 % 3 = 2 (satisfies), 17 % 5 = 2 (does not satisfy)
+      - 23: 23 % 3 = 2 (satisfies), 23 % 5 = 3 (does not satisfy)
+      - 29: 29 % 3 = 2 (satisfies), 29 % 5 = 4 (satisfies) → satisfies all conditions
+
+
+      Step 5: Conclusion
+
+      The smallest positive integer satisfying all three conditions is 29.
+      ```
+- **Prompting ToT in a single prompt:**
+    - Additionally, [(Hulbert, 2023)](https://github.com/dave1010/tree-of-thought-prompting) proposed a way to prompt ToT for an LLM to perform ToT in just one prompt.
+
+---
+
+#### ReAct (Reasoning and Acting)
+
+- **Detailed Thought-Action-Observation (TAO) loop structure:**
+    - **Thought:** This is where the LLM "talks to itself." It analyzes the goal, available information, and decides on the next strategy. The output of this step is usually text describing the thought and action plan. *Example: "I need to find information about policy X. I will use the search tool in the knowledge base."*
+    - **Action:** The LLM selects a `Tool` from an available list and determines the `input` for that tool. The output of this step is often in a specific format (e.g., JSON) that the system can parse to call the corresponding tool. *Example: `{ "tool_name": "KnowledgeBaseSearch", "tool_input": "policy X" }`*
+    - **Observation:** The system executes the `Action` (calls the tool with the given input) and returns the result to the LLM. This result can be text, a number, or an error message. *Example: "Search result: Policy X states that..."*
+    - The LLM then receives this `Observation` and starts a new TAO loop.
+- **Definition and importance of "Tool":**
+    - A Tool is not just a RAG retriever. It can be:
+        - **Information retrieval:** RAG retriever (vector search, keyword search), SQL database query, API lookup (e.g., weather, stock prices).
+        - **Calculation:** Calculator, unit converter.
+        - **Code execution:** Python interpreter (use with caution regarding security).
+        - **User interaction:** Requesting more information from the user.
+    - **Tool Description:** This is extremely important. The LLM relies on this description to understand what the tool does and when to use it. The description needs to be clear, accurate, and include input/output formats if necessary.
+- **Challenges and mitigation:**
+    - **LLM chooses the wrong tool or wrong input:**
+        - *Mitigation:* Provide very detailed tool descriptions. Offer few-shot examples of tool usage in the agent's prompt. Design specialized tools instead of general-purpose ones.
+    - **LLM doesn't understand tool output (Observation):**
+        - *Mitigation:* Ensure tool output is in a consistent and LLM-understandable format. Consider adding a "summarization" or "key information extraction" step from the tool's output before feeding it back to the LLM.
+    - **Falling into infinite loops or making no progress:** The agent keeps repeating the same action without solving the problem.
+        - *Mitigation:* Set a maximum iteration limit. Design prompts to encourage the agent to try different strategies if stuck. Add "memory" so the agent knows what it has already tried.
+    - **Handling errors from tools:** Tools can return errors (e.g., API unavailable, invalid query).
+        - *Mitigation:* The agent needs to be trained (or prompted) to recognize errors and retry, try a different tool, or inform the user.
+- **Example of integration with RAG:**
+    - **User query:** "Find me the 3 most recent scientific articles on 'LLM applications in healthcare' from PubMed (assuming a PubMedSearch tool), then summarize the main findings of each, and check if any mention 'cancer diagnosis' in our internal document repository (using a RAG retriever)."
+    - **ReAct Agent (using `PubMedSearchTool` and `InternalKBRetrieverTool`):**
+        - **Thought 1:** "User wants 3 articles from PubMed on 'LLM in healthcare' and summaries. Then cross-check with internal KB for 'cancer diagnosis'. Start with PubMed."
+        - **Action 1:** `PubMedSearchTool(query="LLM applications in healthcare", count=3, sort_by="recent")`
+        - **Observation 1:** `[{"title": "Article 1", "abstract": "..."}, {"title": "Article 2", "abstract": "..."}, {"title": "Article 3", "abstract": "..."}]` (Structured data)
+        - **Thought 2:** "Got 3 articles. Now need to summarize each. I'll use my language capabilities to summarize." (LLM self-summarizes based on abstracts)
+        - **Action 2 (Not a tool, but LLM self-processing):** (LLM generates summaries for Article 1, Article 2, Article 3)
+        - **Observation 2 (LLM's result):** `Summaries: {Article 1: "Summary 1...", Article 2: "Summary 2...", Article 3: "Summary 3..."}`
+        - **Thought 3:** "Summaries done. Now need to check if any of these (or the general topic) mention 'cancer diagnosis' in the internal KB. I'll use InternalKBRetrieverTool."
+        - **Action 3:** `InternalKBRetrieverTool(query="LLM in healthcare AND cancer diagnosis AND (Article 1 OR Article 2 OR Article 3)")` (Query can be more complex)
+        - **Observation 3:** `[{"source_doc": "Internal Document X", "content": "...mentions using LLMs in early cancer diagnosis, similar to research in Article 2..."}]`
+        - **Thought 4:** "Have enough information. Synthesize and answer."
+        - **Final Answer:** (Combines summaries and cross-check results)
+- **Illustration:**
+    - Below is an illustration of ReAct frameworks ([image source](https://arxiv.org/pdf/2210.03629)):
+    - ![](ReAct_framework.png)
+
+---
+
+#### Planning Frameworks
+
+- **Types of Plans and How to Create Them:**
+    - **Sequence of Steps:** The LLM generates an ordered list of actions to be performed.
+    - **Goal Tree / Task Decomposition:** The LLM breaks down the main goal into sub-goals, and each sub-goal can be further decomposed. This creates a hierarchical structure.
+    - **Prompting for Plans:** Often uses prompts like: "Create a detailed plan to achieve [goal X]. The plan should include main steps, necessary tools (if any), and how to evaluate progress." Examples of plans can be provided (few-shot).
+- **Plan Execution Mechanism:**
+    - **Orchestrator Agent:** A main agent responsible for tracking the plan, executing each step, and updating the status.
+    - **Step-by-step execution:** Each step in the plan can be:
+        - Another LLM call (e.g., "Write a summary about [topic Y]").
+        - Using a `Tool` (e.g., calling a RAG retriever, calling an API).
+        - A specialized sub-agent (e.g., a ReAct agent to perform a complex sub-task).
+- **Reflection/Self-Correction/Re-planning Mechanism:** This is an advanced and important aspect.
+    - **Progress evaluation:** After each step (or a few steps), the agent can pause to assess if the plan is on track.
+    - **Prompting for Reflection:** "You just completed step X. The result was Y. Is the original plan still appropriate? Are any adjustments needed?"
+    - **If the plan is flawed:** The LLM can be prompted to:
+        - Modify the remaining steps of the plan.
+        - Add new steps.
+        - Go back to a previous step and try a different approach.
+        - Create an entirely new plan.
+    
+- **Example of Planning:**
+    - **User goal:** "I am a researcher wanting to write a review article on 'The Impact of Climate Change on Biodiversity in Southeast Asia'. Help me create a detailed outline, find key references from scientific databases (e.g., Scopus, Web of Science - assuming tools exist), and extract important figures from IPCC reports (available in an internal RAG store)."
+    - **Planning Agent and Other Tools:**
+        - **LLM (Planner) creates Initial Plan:**
+            - `Step 1: Understand the requirements and scope.` (LLM self-analysis)
+            - `Step 2: Create a detailed outline for the review article.` (LLM generated, possibly based on sample review articles if provided)
+            - `Step 3: For each outline section, find relevant references from Scopus.` (Uses `ScopusSearchTool`)
+            - `Step 4: For each outline section, find relevant IPCC reports in the internal RAG store.` (Uses `InternalIPCC_RetrieverTool`)
+            - `Step 5: From the retrieved IPCC reports, extract key figures/data relevant to each outline section.` (Could be another LLM call with an information extraction prompt)
+            - `Step 6: Synthesize references and figures, organizing them according to the outline.`
+            - `Step 7: (Optional) Write a first draft for each section.`
+        - **Plan Execution (Orchestrator Agent):**
+            - **Execute Step 2:** LLM creates an outline (e.g., Introduction, Current State of Climate Change in SEA, Impact on Forest Ecosystems, Impact on Marine Ecosystems, Solutions, Conclusion).
+            - **Execute Step 3 (iterate through outline sections):**
+                - Section "Current State of Climate Change in SEA": `Action: ScopusSearchTool(query="climate change Southeast Asia current status")` -> `Observation: [List of articles]`
+                - ... (repeat for other sections)
+            - **Execute Step 4 (iterate through outline sections):**
+                - Section "Impact on Forest Ecosystems": `Action: InternalIPCC_RetrieverTool(query="IPCC report Southeast Asia forest biodiversity impact")` -> `Observation: [List of excerpts from IPCC reports]`
+                - ...
+            - **Execute Step 5 (iterate through IPCC reports and outline sections):**
+                - For report Z and section Y: `Action: LLM_Extraction_Call(context=[Content of report Z], prompt="Extract figures on forest area decline in SEA related to [section Y] from the following text...")` -> `Observation: [Extracted figures]`
+                - ...
+        - **Reflection (Example):** If in Step 3, `ScopusSearchTool` doesn't find many references for a specific outline section, the Orchestrator Agent might trigger the LLM (Planner) to:
+            - "Rethink the search keywords for this section."
+            - "Consider if this outline section is too narrow or too new."
+            - "Perhaps the outline needs adjustment."
+        - **Final Output:** A detailed outline, list of references, and extracted key figures, all organized systematically.
+- **Illustration:**
+    - Below is an illustration of how planning works ([image source](https://langchain-ai.github.io/langgraph/tutorials/plan-and-execute/plan-and-execute/)):
+    ![](planning_reasoning.png)
+---
+</details>
+
+</details>
+
+---

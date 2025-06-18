@@ -192,3 +192,8 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+## technical assessment assignment
+ctx_doc_style.md
+test_data_genai.pdf
+test.ipynb
