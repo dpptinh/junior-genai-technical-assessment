@@ -378,11 +378,13 @@ title: litellm_langgraph_analysis_report_en_v2
         - **Mermaid Diagram: ReAct Loop**
           ```mermaid
           graph TD
-              A[💡 Thought: What to do next?] --> B{🛠️ Action: Use Tool or Respond};
-              B -- Tool Selected --> C[🔧 Execute Tool];
-              C --> D[👀 Observation: Get Tool Result];
-              D --> A;
-              B -- Respond --> E[✅ Final Answer];
+            U[🧑‍💻 User Query] --> A[💡 Thought: What to do next?];
+            A --> B{🛠️ Action: Use Tool or Respond}
+            B -- Tool Selected --> C[🔧 Execute Tool];
+            C --> D[👀 Observation: Get Tool Result];
+            D --> A;
+            B -- Respond --> E[✅ Final Answer];
+
           ```
     - **Plan-and-Execute:** Agent first plans steps, then executes them.
 - **Building multi-agent systems:** Multiple agents (sub-graphs) collaborating.
