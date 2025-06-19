@@ -13,13 +13,20 @@ This guide demonstrates an end-to-end RAG pipeline:
 ### 🧭 System Architecture Diagram
 ```mermaid
 flowchart TD
-    A[User Question] --> B{LangChain ReAct Agent}
-    B -->|Internal Knowledge| C[Tool: knowledge_base_lookup]
-    C --> D[RetrieverQueryEngine]
-    D --> E[Chroma Vector DB]
-    B -->|Fallback| F[Tool: web_search]
-    F --> G[DuckDuckGo API]
-    B --> H[Final Answer]
+    Q([🔎 Query]) --> T{{🧠 Thinking}}
+    T -- Action --> TOOL([🛠️ Tool])
+    TOOL --> OBS([👁️ Observation])
+    OBS --> T
+    T -- Finish --> A([📝 Answer])
+
+    %% Colors & Style
+    style Q fill:#fca5a5,stroke:#ef4444,stroke-width:2px,color:#000
+    style T fill:#86efac,stroke:#22c55e,stroke-width:2px,color:#000
+    style TOOL fill:#e5e7eb,stroke:#6b7280,stroke-width:2px,color:#000
+    style OBS fill:#e0f2fe,stroke:#38bdf8,stroke-width:2px,color:#000
+    style A fill:#fde68a,stroke:#f59e0b,stroke-width:2px,color:#000
+
+
 ```
 
 ---
