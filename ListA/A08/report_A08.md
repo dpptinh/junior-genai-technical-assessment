@@ -18,8 +18,6 @@ title: a08_mcp_a2a_opentools_analysis_report
     - An open protocol by Google for standardizing direct communication, task delegation, and collaboration between independent AI agents, regardless of their underlying frameworks.
 - **OpenTools API:**
     - A specific API service (from opentools.com) that acts as an MCP client abstraction, providing a unified, OpenAI-compatible endpoint for LLMs to access a registry of tools (MCP servers) managed by OpenTools.
-- **General LLM Tool Calling (e.g., OpenAI Functions/Tools):**
-    - A capability provided by LLM APIs (like OpenAI's) allowing the LLM to request the invocation of external functions or tools. The application code is responsible for defining, executing these tools, and returning results to the LLM.
 - **Agent:**
     - An autonomous or semi-autonomous system, often powered by an LLM, capable of perceiving its environment, making decisions, and taking actions to achieve specific goals.
 - **Context Sharing:**
@@ -733,129 +731,8 @@ print(r.json())
 </details>
 
 ---
-## LLM Tool Calling and OpenTools API
+## OpenTools API
 ---
-### General LLM Tool Calling (e.g., OpenAI Functions/Tools)
-<details - open>
-<summary>Understanding LLM Interaction with External Functions (Application-Executed)</summary>
-
----
-- **Core Concept:**
-    - Enables LLMs to interact with external systems, APIs, and data sources by "calling functions" or "using tools."
-    - The LLM decides *which* tool to use and *what parameters* to pass, based on user prompt and tool descriptions provided by the application.
-    - The *application code* is responsible for actually executing the tool/function and returning the output to the LLM.
-- **Typical Workflow:**
-    - User provides a prompt to the LLM via an application.
-    - The application also provides the LLM with a list of available tools (function signatures and descriptions).
-    - The LLM, based on the prompt, determines if a tool needs to be called.
-    - If so, the LLM outputs a structured request (e.g., JSON) indicating the tool name and arguments.
-    - The application code receives this request, executes the specified tool/function with the provided arguments.
-    - The tool's output is returned by the application to the LLM.
-    - The LLM uses this output to formulate a final response to the user.
-- **Integration Patterns:**
-    - **Single LLM with Multiple Tools:** A primary LLM is equipped with a set of tools it can choose to use, managed by the application.
-    - **Tool-Using Agents:** An agent (which might be an LLM wrapper) is specifically designed by the application to use one or more tools as its primary function.
-- **Use Cases:**
-    - **Retrieving Real-time Information:** Accessing current news, stock prices, weather forecasts (application calls the respective APIs).
-    - **Interacting with External APIs:** Booking flights, ordering food, managing calendar events (application handles the API integrations).
-    - **Accessing Proprietary Data:** Querying internal company databases or knowledge bases (application provides the data access layer).
-    - **Performing Calculations or Data Transformations:** Using specialized libraries or services (application invokes these).
-    - **Executing Code:** Running scripts or commands in a controlled environment (application manages execution; requires careful security).
-- **Integration Approaches:**
-    - **Direct API Integration:** Application code directly calls LLM APIs (e.g., OpenAI API) and handles tool execution logic.
-    - **Using Frameworks:** Libraries like LangChain provide abstractions for defining tools and integrating them with LLMs, simplifying the process for the application developer.
-    - **Serverless Functions:** Hosting tool execution logic in serverless functions (e.g., AWS Lambda, Google Cloud Functions) for scalability and isolation, invoked by the application.
-
-- **Example: General Tool Calling with OpenAI API (Conceptual Python):**
-    - *This illustrates the general idea; actual implementation requires handling the `tool_calls` response from the first LLM call, executing the function, and making a subsequent API call with the function's result.*
-    ```python
-    import openai
-    import json
-
-    # Ensure your OpenAI API key is set as an environment variable or configured
-    # client = openai.OpenAI(api_key="YOUR_API_KEY") # Replace with your key or use env var
-
-    # Example function to be called by the LLM (executed by your application)
-    def get_current_weather(location, unit="fahrenheit"):
-        """Get the current weather in a given location"""
-        if "tokyo" in location.lower():
-            return json.dumps({"location": "Tokyo", "temperature": "10", "unit": "celsius"})
-        elif "san francisco" in location.lower():
-            return json.dumps({"location": "San Francisco", "temperature": "72", "unit": "fahrenheit"})
-        else:
-            return json.dumps({"location": location, "temperature": "unknown"})
-
-    def run_conversation():
-        client = openai.OpenAI() # Assumes OPENAI_API_KEY is set in environment
-        messages = [{"role": "user", "content": "What's the weather like in San Francisco and Tokyo?"}]
-        tools = [
-            {
-                "type": "function",
-                "function": {
-                    "name": "get_current_weather",
-                    "description": "Get the current weather in a given location",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "location": {
-                                "type": "string",
-                                "description": "The city and state, e.g. San Francisco, CA",
-                            },
-                            "unit": {"type": "string", "enum": ["celsius", "fahrenheit"]},
-                        },
-                        "required": ["location"],
-                    },
-                },
-            }
-        ]
-        
-        # First call to the model
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo-0125",
-            messages=messages,
-            tools=tools,
-            tool_choice="auto", 
-        )
-        response_message = response.choices[0].message
-        tool_calls = response_message.tool_calls
-
-        # Check if the model wants to call a function
-        if tool_calls:
-            messages.append(response_message) # Extend conversation with assistant's reply
-            available_functions = {
-                "get_current_weather": get_current_weather,
-            }
-            for tool_call in tool_calls:
-                function_name = tool_call.function.name
-                function_to_call = available_functions[function_name]
-                function_args = json.loads(tool_call.function.arguments)
-                function_response = function_to_call(
-                    location=function_args.get("location"),
-                    unit=function_args.get("unit"),
-                )
-                messages.append(
-                    {
-                        "tool_call_id": tool_call.id,
-                        "role": "tool",
-                        "name": function_name,
-                        "content": function_response,
-                    }
-                )
-            
-            # Second call to the model with function response
-            second_response = client.chat.completions.create(
-                model="gpt-3.5-turbo-0125",
-                messages=messages,
-            )
-            return second_response.choices[0].message.content
-        return response_message.content # If no tool call was made
-
-    # if __name__ == "__main__":
-    #     final_answer = run_conversation()
-    #     print(final_answer)
-    ```
----
-</details>
 
 ### OpenTools API Specific Analysis
 <details - open>
@@ -1117,26 +994,26 @@ print(r.json())
 <summary>Side-by-Side Evaluation of MCP, A2A, General Tool Calling, and OpenTools API</summary>
 
 ---
-| Feature/Criterion             | Model Context Protocol (MCP)                                  | Agent-to-Agent (A2A) Communication                         | General LLM Tool Calling (e.g., OpenAI) | OpenTools API (MCP Client Abstraction)                     |
+| Feature/Criterion             | Model Context Protocol (MCP)                                  | Agent-to-Agent (A2A) Communication                        | OpenTools API (MCP Client Abstraction)                     |
 |-------------------------------|---------------------------------------------------------------|------------------------------------------------------------|-----------------------------------------------------------|------------------------------------------------------------|
-| **Primary Purpose**           | Standardize agent-to-tool communication for *your tools*; robust context sharing, memory, persistence. | Standardize complex interactions and coordination among independent AI agents. | Enable LLM to request external function/API calls. | Simplify LLM access to a *managed registry* of tools via a unified API. |
-| **Key Focus / Locus of Control**| Agent ↔ Your External Systems/APIs (via your MCP Server); API Integration; Backend (Data/API access). | Agent ↔ Agent; Collaboration & Interoperability; Mid-layer (Agent Network). | LLM ↔ Your External Tool/Function (Your App-managed execution). | LLM ↔ Managed Tool Execution Service (Tool execution handled by OpenTools). |
-| **Context Management**        | Core focus; sophisticated, potentially long-term.             | Can leverage MCP or have own context per agent/interaction; A2A itself promotes stateless agent interaction. | Primarily for current task; context passed via LLM calls, managed by app. | Leverages MCP principles for tools; context managed by LLM calls and potentially by underlying MCP tools. |
-| **Communication Complexity**  | Moderate (Client-Server); defined transports (Stdio, SSE, Custom). | High; diverse patterns (`JSON-RPC` over `HTTP(S)`, SSE, Callbacks). | Simple; LLM requests tool use, app executes & returns.    | Very Simple for developer (single API call); MCP complexity abstracted by OpenTools. |
-| **Agent Coordination**        | Indirectly supports via shared context.                       | Core focus; task distribution, result aggregation, discovery via Agent Cards. | Not a primary feature; typically single LLM directs, app orchestrates. | Not a primary feature; focused on single LLM to tool.     |
-| **External System Interaction**| Core focus; connects AI models to *your* external tools and data sources via *your* MCP Servers. | Agents can be designed to interact with external systems, potentially using MCP for tool access. | Core focus; designed for LLM to call external tools defined/executed by *your app*. | Core focus; provides managed access to external tools in *its registry*.      |
-| **Tool Execution Responsibility**| Your MCP Server executes the tool.                           | The respective agent (or system it controls) executes the action/tool. | Your application code executes the tool.                  | The OpenTools service executes the tool from its registry. |
-| **Implementation Complexity** | Moderate to High (for *your* MCP server implementation).      | High (managing multiple agents, comms, coordination, Agent Card exposure). | Low to Moderate (for tool definition & *your app's* execution logic).  | Very Low (for API user); OpenTools handles MCP client and tool execution complexity. |
-| **Scalability**               | Depends on context store scalability and *your* server performance. | Challenging; requires careful design for many agents, but A2A provides foundational standards. | Scales with LLM provider and *your app's* tool execution infra. | Scales with OpenTools service; user relies on their infrastructure. |
-| **Flexibility**               | High for context-rich applications and standardized access to *your own tools*. | Very high for distributed, autonomous systems from different vendors. | Moderate; focused on LLM-tool interaction with *app-defined tools*. | Moderate; limited by OpenTools' tool registry and API capabilities, but high for LLM backend switching. |
-| **Maturity & Standardization**| Open standard by Anthropic (late 2024), growing adoption.     | Open protocol by Google (April 2025), backed by `50+` tech companies. | Becoming standardized by LLM providers (e.g., OpenAI).   | Proprietary API (OpenAI-compatible) by OpenTools.com; leverages MCP. |
-| **Transport Methods**         | Stdio, SSE, Custom.                                           | `JSON-RPC 2.0` over `HTTP(S)`, SSE, Push Callbacks.        | Typically `HTTPS` to LLM provider API; app handles tool transport. | `HTTPS` to OpenTools API.                                  |
-| **Data Formats**              | Tools, Resources, Prompts (defined by *your* MCP server).     | Tasks, Artifacts, Messages, Parts (defined by A2A spec using OpenAPI). | LLM-specific tool call format (often JSON, defined by *your app*). | OpenAI-compatible JSON for requests; tool specifics abstracted. |
-| **Authentication (to tools)** | Handled by *your* MCP server/client (`OAuth 2.1`, API Keys).  | N/A (A2A auth is agent-to-agent).                          | Handled by *your application code* calling the tool.      | Handled by OpenTools service for registry tools.            |
-| **Security Concerns**         | Prompt injection, broad permissions (if *your server* is poorly designed), data aggregation. | Authorization boundaries, cross-domain security for agents. | Prompt injection, secure tool execution by *your app*.    | Trust in OpenTools service security, data handling; prompt injection. |
-| **Ideal Use Cases**           | Dev environments, direct tool access to *your* systems, live coding context, rich user session context. | Multi-agent workflows, cross-system automation, enterprise processes, inter-vendor agent collaboration. | Quick external data lookups, specific API actions executed by *your app*. | Rapid prototyping with diverse tools, abstracting LLM/tool backends, integrating with platforms like IBM watsonx. |
-| **Task Management**           | Single-stage execution (tool call).                           | Multi-stage lifecycle (pending, running, etc.).             | Typically single request/response for tool call (*app manages*). | Single API call to OpenTools; internal calls managed by OpenTools. |
-| **Capability Specification**  | Low-level, instruction-based (JSON Schema for tools in *your server*). | High-level, goal-oriented (Agent Cards using OpenAPI schemas). | Function signatures/descriptions provided to LLM by *your app*. | Tools referenced by name (e.g., `exa`); capabilities defined by OpenTools registry. |
+| **Primary Purpose**           | Standardize agent-to-tool communication for *your tools*; robust context sharing, memory, persistence. | Standardize complex interactions and coordination among independent AI agents.| Simplify LLM access to a *managed registry* of tools via a unified API. |
+| **Key Focus / Locus of Control**| Agent ↔ Your External Systems/APIs (via your MCP Server); API Integration; Backend (Data/API access). | Agent ↔ Agent; Collaboration & Interoperability; Mid-layer (Agent Network). | LLM ↔ Managed Tool Execution Service (Tool execution handled by OpenTools). |
+| **Context Management**        | Core focus; sophisticated, potentially long-term.             | Can leverage MCP or have own context per agent/interaction; A2A itself promotes stateless agent interaction. | Leverages MCP principles for tools; context managed by LLM calls and potentially by underlying MCP tools. |
+| **Communication Complexity**  | Moderate (Client-Server); defined transports (Stdio, SSE, Custom). | High; diverse patterns (`JSON-RPC` over `HTTP(S)`, SSE, Callbacks). | Very Simple for developer (single API call); MCP complexity abstracted by OpenTools. |
+| **Agent Coordination**        | Indirectly supports via shared context.                       | Core focus; task distribution, result aggregation, discovery via Agent Cards. | Not a primary feature; focused on single LLM to tool.     |
+| **External System Interaction**| Core focus; connects AI models to *your* external tools and data sources via *your* MCP Servers. | Agents can be designed to interact with external systems, potentially using MCP for tool access. | Core focus; provides managed access to external tools in *its registry*.      |
+| **Tool Execution Responsibility**| Your MCP Server executes the tool.                           | The respective agent (or system it controls) executes the action/tool. | The OpenTools service executes the tool from its registry. |
+| **Implementation Complexity** | Moderate to High (for *your* MCP server implementation).      | High (managing multiple agents, comms, coordination, Agent Card exposure). | Very Low (for API user); OpenTools handles MCP client and tool execution complexity. |
+| **Scalability**               | Depends on context store scalability and *your* server performance. | Challenging; requires careful design for many agents, but A2A provides foundational standards.| Scales with OpenTools service; user relies on their infrastructure. |
+| **Flexibility**               | High for context-rich applications and standardized access to *your own tools*. | Very high for distributed, autonomous systems from different vendors. | Moderate; limited by OpenTools' tool registry and API capabilities, but high for LLM backend switching. |
+| **Maturity & Standardization**| Open standard by Anthropic (late 2024), growing adoption.     | Open protocol by Google (April 2025), backed by `50+` tech companies. | Proprietary API (OpenAI-compatible) by OpenTools.com; leverages MCP. |
+| **Transport Methods**         | Stdio, SSE, Custom.                                           | `JSON-RPC 2.0` over `HTTP(S)`, SSE, Push Callbacks.        | `HTTPS` to OpenTools API.                                  |
+| **Data Formats**              | Tools, Resources, Prompts (defined by *your* MCP server).     | Tasks, Artifacts, Messages, Parts (defined by A2A spec using OpenAPI). || OpenAI-compatible JSON for requests; tool specifics abstracted. |
+| **Authentication (to tools)** | Handled by *your* MCP server/client (`OAuth 2.1`, API Keys).  | N/A (A2A auth is agent-to-agent).                           | Handled by OpenTools service for registry tools.            |
+| **Security Concerns**         | Prompt injection, broad permissions (if *your server* is poorly designed), data aggregation. | Authorization boundaries, cross-domain security for agents. | Trust in OpenTools service security, data handling; prompt injection. |
+| **Ideal Use Cases**           | Dev environments, direct tool access to *your* systems, live coding context, rich user session context. | Multi-agent workflows, cross-system automation, enterprise processes, inter-vendor agent collaboration. | Rapid prototyping with diverse tools, abstracting LLM/tool backends, integrating with platforms like IBM watsonx. |
+| **Task Management**           | Single-stage execution (tool call).                           | Multi-stage lifecycle (pending, running, etc.).             || Single API call to OpenTools; internal calls managed by OpenTools. |
+| **Capability Specification**  | Low-level, instruction-based (JSON Schema for tools in *your server*). | High-level, goal-oriented (Agent Cards using OpenAPI schemas). | Tools referenced by name (e.g., `exa`); capabilities defined by OpenTools registry. |
 
 ---
 </details>
@@ -1171,17 +1048,6 @@ print(r.json())
         - Challenging to debug and scale without careful design of agents and their interactions.
         - Coordination and consensus among many agents can be difficult to get right.
         - Relatively new protocol, so best practices and tooling are still emerging.
-- **General LLM Tool Calling (e.g., OpenAI Functions/Tools):**
-    - *Strengths:*
-        - Relatively simple to implement for LLM-driven tool use where the application controls the tools.
-        - Directly extends LLM capabilities to interact with the real world via *application-defined and executed tools*.
-        - LLM provider handles the "decision to call"; application developer focuses on tool logic.
-        - Full control over tool execution logic, security, and data handling within the application.
-    - *Weaknesses:*
-        - Application code must execute the tool and return results to the LLM (multi-step interaction with LLM).
-        - Limited in managing complex, ongoing context across multiple interactions without additional MCP-like support or custom state management by the app.
-        - Not inherently designed for multi-agent coordination beyond simple orchestration by the application.
-        - Each new tool requires custom integration code in the application.
 - **OpenTools API (MCP Client Abstraction):**
     - *Strengths:*
         - Very easy to integrate tool usage for LLMs using an OpenAI-compatible API.
@@ -1217,11 +1083,6 @@ print(r.json())
     - Complex problem-solving that can be broken down and tackled by different autonomous agents (e.g., enterprise workflows like hiring, customer support involving multiple backends).
     - Building simulated environments or agent-based models requiring inter-agent dialogue and coordination.
     - Interoperability between agents built on different platforms is a key requirement.
-- **Choose General LLM Tool Calling (e.g., OpenAI Functions) when:**
-    - An LLM needs to access real-time information (e.g., weather, news) via an API *your application integrates, executes, and secures*.
-    - An LLM needs to perform actions via external APIs (e.g., booking, ordering) where *your application handles the API call logic and security*.
-    - Integrating LLMs with existing enterprise systems or databases for data retrieval or updates in a more direct, LLM-centric way, with *your application controlling the tool execution*.
-    - Simplicity for a single LLM-to-tool interaction is key, and you want full control over the tool's implementation and execution within your app.
 - **Choose OpenTools API when:**
     - You want to quickly enable an LLM to use a variety of pre-existing, general-purpose tools (like web search via `exa`) without implementing an MCP client or individual tool integrations yourself.
     - You need to easily switch between different LLM providers while using the same set of external tools from the OpenTools registry.
@@ -1247,10 +1108,7 @@ print(r.json())
 
 ---
 #### Key Decision-Making Questions
-<details - open>
-<summary>Critical Questions to Guide the Selection Process</summary>
 
----
 - **Nature of the Task & Control over Tools:**
     - Is the primary goal to enable an LLM to use external tools/APIs for specific actions/data, where *your application defines, executes, and secures the tool*? (→ General Tool Calling)
     - Is the primary goal to enable an LLM to use a *managed registry of external tools* via a simple API, where the *service provider executes the tool*? (→ OpenTools API)
@@ -1280,38 +1138,16 @@ print(r.json())
 - **Production Readiness Needs:**
     - What are the requirements for reliability, fault tolerance, security, and observability? (MCP has noted security/reliability concerns for complex production use if not well-implemented by *you*; A2A is built with enterprise security in mind; OpenTools API relies on the provider's posture).
 
----
-</details>
-
 #### Decision Tree Flowchart Guidance
-<details - open>
-<summary>Visual Aid for Navigating Integration Choices (Conceptual)</summary>
 
----
-- *(A full graphical flowchart is beyond plain Markdown's capability. Below is a textual representation of decision logic.)*
-- **Start: Define primary system goal and control requirements over tool execution and data.**
-
-- **1. Do you primarily need an LLM to use external tools/APIs?**
-    - *Yes:*
-        - **1a. Do you want your application to define, execute, and secure these tools?**
-            - *Yes:* → **Consider General LLM Tool Calling.**
-                - *Further Check:* Does this tool-using LLM also need deep, persistent context across sessions OR do you need a standardized protocol for *your agents* to connect to *your tools* (not just the LLM)?
-                    - *Yes:* → **General Tool Calling + MCP elements (for context/agent-tool standardization via your own MCP servers).**
-                    - *No:* → **General Tool Calling likely sufficient for simple LLM-tool interactions.**
-            - *No (you prefer a managed service for tool access/execution):*
-                - **1b. Do you want to use a managed service with a pre-existing tool registry, where the service executes the tools and abstracts complexity?**
-                    - *Yes:* → **Consider OpenTools API.**
-                        - *Further Check:* Does it also need deep, persistent context across sessions beyond what the LLM call provides, or standardized connection to *your own custom tools* not in the OpenTools registry? If so, OpenTools API might be used alongside custom MCP for those specific needs (you host MCP servers for your tools).
-    - *No (tool use is not the primary driver, or other needs are more dominant):* (Proceed to next major branch)
-
-- **2. Is your primary goal to manage rich, persistent context for model(s) AND/OR standardize how one or more *of your agents/models* connect to *your various self-hosted tools* using a defined protocol?**
+- **Is your primary goal to manage rich, persistent context for model(s) AND/OR standardize how one or more *of your agents/models* connect to *your various self-hosted tools* using a defined protocol?**
     - *Yes:* → **Consider MCP as a core component (you build and host MCP servers).**
         - *Further Check:* Are there multiple, distinct, autonomous agents (potentially from different vendors) that also need to interact, delegate, and coordinate complex tasks among themselves?
             - *Yes:* → **MCP (for tool access/context via your servers) + A2A communication (for inter-agent collaboration).**
             - *No (e.g., single sophisticated model or tightly coupled components primarily focused on tool use with rich context via your servers):* → **MCP might be sufficient.**
     - *No:* (Proceed to next major branch)
 
-- **3. Is your primary goal to enable multiple autonomous, specialized agents (potentially from different vendors) to collaborate, delegate, and coordinate on complex tasks, discovering each other dynamically?**
+- **Is your primary goal to enable multiple autonomous, specialized agents (potentially from different vendors) to collaborate, delegate, and coordinate on complex tasks, discovering each other dynamically?**
     - *Yes:* → **Consider A2A communication patterns and frameworks.**
         - *Further Check:* Do these agents also need a sophisticated shared understanding or long-term memory managed centrally, OR do individual agents need standardized access to a variety of external tools?
             - *Yes (for your internal tools/context):* → **A2A + MCP elements (agents use MCP to connect to your self-hosted servers for their tool/data needs).**
@@ -1321,14 +1157,9 @@ print(r.json())
 
 - **General Consideration:** If multiple goals are present, a **Hybrid Approach** is likely necessary and often recommended. Start with the most dominant requirement and layer other approaches as needed. Simplicity often wins in developer adoption, but don't sacrifice necessary control or features.
 
----
-</details>
 
 #### Scenario-Based Recommendations
-<details - open>
-<summary>Suggested Approaches for Common GenAI System Scenarios</summary>
 
----
 - **Scenario 1: Simple Q&A Bot with Real-time Data Lookup (e.g., weather from a specific API you integrate and execute).**
     - *Recommendation:* **General LLM Tool Calling.**
     - *Rationale:* LLM needs to call a specific external API; your application handles execution and security. Context is typically short-term per query.
@@ -1353,7 +1184,6 @@ print(r.json())
 
 ---
 </details>
-</details>
 
 ---
 ## Hybrid Approaches and Migration
@@ -1364,10 +1194,7 @@ print(r.json())
 
 ---
 #### Combining Different Integration Methods
-<details - open>
-<summary>Leveraging Strengths by Merging MCP, A2A, and Tool Calling Approaches</summary>
 
----
 - **Rationale for Hybrid Approaches:**
     - Real-world GenAI systems often have multifaceted requirements that a single integration approach cannot optimally address.
     - Combining methods allows for a more tailored and effective solution. Google explicitly positions A2A as complementary to MCP. Services like OpenTools API can fit into various hybrid architectures.
@@ -1404,15 +1231,8 @@ Below is an illustration of combining A2A and MCP ([Image source](https://google
 - MCP (Model Context Protocol): Connects agents to tools, APIs, and resources with structured inputs/outputs. 
 - A2A (Agent2Agent Protocol): Facilitates dynamic, multimodal communication between different agents as peers. 
 
-
----
-</details>
-
 #### Migration Strategies Between Approaches
-<details - open>
-<summary>Guidance on Evolving Integration Architectures</summary>
 
----
 - **Reasons for Migration:**
     - System requirements evolve (e.g., needing more complex agent interactions than initially planned).
     - Scaling challenges with the current approach.
@@ -1447,7 +1267,6 @@ Below is an illustration of combining A2A and MCP ([Image source](https://google
 
 ---
 </details>
-</details>
 
 ---
 ## Best Practices
@@ -1458,10 +1277,7 @@ Below is an illustration of combining A2A and MCP ([Image source](https://google
 
 ---
 #### Optimization Strategies
-<details - open>
-<summary>Enhancing Performance, Efficiency, and Cost-Effectiveness</summary>
 
----
 - **Prompt Engineering:**
     - Craft clear, concise, and effective prompts to guide LLM behavior and tool usage, whether for General Tool Calling, OpenTools API, or MCP-based tools.
     - Use few-shot examples where appropriate to improve tool selection and output formatting.
@@ -1485,10 +1301,7 @@ Below is an illustration of combining A2A and MCP ([Image source](https://google
 </details>
 
 #### Troubleshooting and Debugging
-<details - open>
-<summary>Identifying and Resolving Issues in Integrated GenAI Systems</summary>
 
----
 - **Comprehensive Logging:**
     - Log all LLM inputs/outputs, tool call requests and responses (for General Tool Calling, OpenTools API, MCP interactions), and agent interactions (A2A messages, task statuses).
     - Include timestamps, session IDs, agent IDs, task IDs, correlation IDs, and any unique identifiers from services like OpenTools (e.g., `Generation` ID, `Call` ID).
@@ -1514,10 +1327,7 @@ Below is an illustration of combining A2A and MCP ([Image source](https://google
 </details>
 
 #### Production Considerations
-<details - open>
-<summary>Key Factors for Deploying and Maintaining Systems in Production</summary>
 
----
 - **Scalability and Performance:**
     - Design for horizontal scaling of stateless components.
     - Use load balancers to distribute traffic.
@@ -1552,7 +1362,6 @@ Below is an illustration of combining A2A and MCP ([Image source](https://google
 
 ---
 </details>
-</details>
 
 ---
 ## Conclusion
@@ -1563,10 +1372,7 @@ Below is an illustration of combining A2A and MCP ([Image source](https://google
 
 ---
 #### Summary of Key Insights
-<details - open>
-<summary>Recap of the Main Findings and Takeaways from the Report</summary>
 
----
 - This report has provided a detailed examination of Model Context Protocol (MCP), Agent-to-Agent (A2A) communication, General LLM Tool Calling, and the OpenTools API as critical integration patterns for advanced GenAI systems.
 - MCP excels at standardizing agent-to-tool communication for *your self-hosted tools* and managing rich, persistent context from *your systems*.
 - A2A is designed for complex, direct communication and collaboration between independent AI agents, potentially from different vendors, emphasizing task delegation and interoperability.
@@ -1580,10 +1386,7 @@ Below is an illustration of combining A2A and MCP ([Image source](https://google
 </details>
 
 #### Future Outlook and Recommendations
-<details - open>
-<summary>Concluding Thoughts on Future Trends and Strategic Advice</summary>
 
----
 - **Emerging Standards and Abstractions:**
     - The field of GenAI integration is rapidly evolving. MCP and A2A represent significant steps towards standardization at the protocol level.
     - Services like the OpenTools API demonstrate a trend towards higher-level abstractions that simplify access to these underlying capabilities.
@@ -1604,5 +1407,4 @@ Below is an illustration of combining A2A and MCP ([Image source](https://google
 
 ---
 </details>
-
 ---
