@@ -383,32 +383,19 @@ The conceptual architecture is based on information from [google-a2a](https://go
 - **Conceptual A2A Workflow Example (Blog Post Generation):**
     ```mermaid
         graph TD
-            A[💡 User Request: Write AI Blog Post] --> B(🤵 Manager Agent);
+            A[🧠 Manager Agent] --> |Assign task| B[🌐 Crawler Agent]
+            A --> |Assign task| C[✍️ Writer Agent]
 
-            subgraph Task Delegation & Execution
-                B -- Assigns Crawling Task --> C{🌐 Crawler Agent};
-                C -- Confirms Scope (e.g., AI in Healthcare) --> B;
-                C -- Crawls Data & Sends to Writer --> D(✍️ Writer Agent);
-                D -- Writes Draft & Sends to Plagiarism Checker --> E(🔎 Plagiarism Check Agent);
-                E -- Checks & Sends Result (Pass/Fail) + Article --> D;
-                D -- If Fail, Revises or Requests More Data from C --> C;
-                D -- If Pass, Sends Final Draft to Manager --> B;
-            end
+            B --> |Provide content| C[✍️ Writer Agent]
+            C --> |Insufficient content| B[🌐 Crawler Agent]
+            C --> |Check plagiarism| D[🔎 Plagiarism Check]
+            D --> |✅ Pass| E[✅ Final Output to Manager]
 
-            subgraph Feedback Loop (Optional)
-                B -- Reviews Draft & Sends Feedback --> D;
-                D -- Revises Based on Feedback --> B;
-            end
+            D --> |❌ High plagiarism, rewrite| C[✍️ Writer Agent]
 
-            B -- Sends Final Article to User/System --> F[✅ Blog Post Ready];
-
-            style A fill:#lightgrey,stroke:#333
-            style B fill:#lightblue,stroke:#333
-            style C fill:#lightgreen,stroke:#333
-            style D fill:#lightyellow,stroke:#333
-            style E fill:#orange,stroke:#333
-            style F fill:#lightgrey,stroke:#333
-        end
+            B --🔁 Confirm scope --> A
+            C --📤 Submit article & report --> A
+            A --📥 Feedback for revision (if needed) --> C
     ```
 
 **NOTE:** Assuming the Agents have been deployed locally, now call the Agents through API (localhost)
@@ -1160,20 +1147,17 @@ print(r.json())
 
 #### Scenario-Based Recommendations
 
-- **Scenario 1: Simple Q&A Bot with Real-time Data Lookup (e.g., weather from a specific API you integrate and execute).**
-    - *Recommendation:* **General LLM Tool Calling.**
-    - *Rationale:* LLM needs to call a specific external API; your application handles execution and security. Context is typically short-term per query.
-- **Scenario 1b: Simple Q&A Bot needing access to a wide range of general real-time data (e.g., web search via Exa tool) without much integration effort from your side.**
+
+- **Scenario 1: Simple Q&A Bot needing access to a wide range of general real-time data (e.g., web search via Exa tool) without much integration effort from your side.**
     - *Recommendation:* **OpenTools API.**
     - *Rationale:* Quickly access pre-integrated tools like web search via a simple API call; OpenTools service handles tool execution.
 - **Scenario 2: Advanced Customer Service Virtual Assistant with Long Conversation History and Personalization, needing to access internal order systems (your company's DB) and external shipping APIs (e.g., FedEx).**
-    - *Recommendation:* **MCP (for conversation history, personalization context, and standardized access to your internal order system tools via your own MCP server) + General LLM Tool Calling (for the external FedEx API if direct integration by your app is preferred for control/cost) OR OpenTools API (if a suitable shipping tool exists in their registry and managed access is desired).**
+    - *Recommendation:* **MCP (for conversation history, personalization context, and standardized access to your internal order system tools via your own MCP server) OR OpenTools API (if a suitable shipping tool exists in their registry and managed access is desired).**
     - *Rationale:* MCP for managing user history, preferences, and stateful interactions with internal systems. Choice for external APIs depends on control vs. convenience.
 - **Scenario 3: Multi-Agent System for Complex Research and Report Generation (e.g., a researcher agent, a writer agent, a reviewer agent from different teams/vendors).**
     - *Recommendation:* **A2A Communication (for inter-agent coordination) + options for tool access per agent:**
         - **MCP:** For standardized access to shared internal knowledge bases or proprietary research tools (agents connect to your self-hosted MCP servers).
         - **OpenTools API:** For general-purpose tools like web search, data extraction needed by individual agents (agents call OpenTools API).
-        - **General LLM Tool Calling:** For highly specific functions an agent's host application might execute locally or via an application-controlled API.
     - *Rationale:* A2A for coordination. Agents use the most appropriate tool access method for their specific needs, promoting flexibility.
 - **Scenario 4: An LLM integrated into an existing application to summarize text or answer questions based on provided documents (e.g., local files on user's desktop or internal company SharePoint).**
     - *Recommendation:* **MCP (if accessing local files or structured internal data like SharePoint in a standardized, context-aware way for the LLM, via your own MCP server for SharePoint or a local MCP server for files).** Alternatively, for simpler cases, direct LLM integration with careful context window management by the application. General Tool Calling might be used if documents/databases are exposed via an application-controlled API.
@@ -1203,20 +1187,14 @@ print(r.json())
         - Multiple agents communicate using A2A patterns (e.g., `JSON-RPC`, SSE).
         - Individual agents use MCP (connecting to self-hosted MCP servers) to connect to their required internal tools and data sources, or a shared MCP layer provides common context.
         - *Example:* In a productivity suite, an Assistant Agent (A2A) contacts a Calendar Agent, which uses its MCP interface to pull data from Google Calendar (via a company-managed MCP server for GCal).
-    - **A2A with General LLM Tool Calling:**
-        - Individual agents within an A2A system are equipped with General Tool Calling capabilities, where the agent's host application executes the tool.
-        - This allows specialized agents to interact with external APIs or data sources as part of their function, with the application maintaining control over tool execution.
     - **A2A with OpenTools API:**
         - Individual agents within an A2A system use the OpenTools API for simpler access to a broad registry of external tools, with OpenTools handling execution.
         - *Example:* A "travel planner" agent in a multi-agent system uses OpenTools API to call flight and hotel booking tools from their registry.
-    - **MCP (Self-Hosted Servers) with General LLM Tool Calling:**
-        - An LLM primarily uses General Tool Calling for external interactions (app executes tools).
-        - An MCP layer (via your servers) manages the broader conversational or user session context from your internal systems, which can inform how the LLM decides to use tools or interpret their results.
     - **MCP (Self-Hosted Servers) with OpenTools API:**
         - A system uses MCP for its core, proprietary, context-aware tools (self-hosted servers).
         - It also leverages the OpenTools API to provide LLMs/agents with access to a wider, general-purpose toolset without needing to build MCP servers for all of them.
         - *Example:* A chatbot uses OpenTools API to get product information from the web, while MCP (self-hosted) remembers the user's past purchases and preferences from an internal CRM to tailor recommendations.
-    - **Full Hybrid (MCP + A2A + General Tool Calling + OpenTools API):**
+    - **Full Hybrid (MCP + A2A + OpenTools API):**
         - Complex systems where multiple agents (A2A) coordinate.
         - Agents share deep contextual understanding via self-hosted MCP for shared internal data.
         - Individual agents might use self-hosted MCP servers for specific internal tools.
@@ -1239,18 +1217,9 @@ Below is an illustration of combining A2A and MCP ([Image source](https://google
     - Desire to add new capabilities (e.g., deeper context management, broader external tool access, or more control over tools).
     - Cost considerations (e.g., moving from a managed service to self-hosted, or vice-versa).
 - **Common Migration Paths:**
-    - **From General LLM Tool Calling to General LLM Tool Calling + MCP (Self-Hosted):**
-        - *Scenario:* A simple tool-using LLM (app executes tools) now needs to remember user history and preferences across sessions or requires standardized access for multiple agents to a growing number of complex internal tools.
-        - *Strategy:* Introduce a context management layer (MCP concepts) to store and retrieve relevant session/user data. Implement self-hosted MCP servers for complex/numerous internal tools.
-    - **From General LLM Tool Calling to OpenTools API (for some tools):**
-        - *Scenario:* Managing individual tool integrations and API keys for common external tools becomes cumbersome; desire for a unified tool access point or easier LLM backend switching for these common tools.
-        - *Strategy:* Migrate calls for these common external tools to use the OpenTools API endpoint, leveraging its tool registry. Application still handles proprietary tools via General LLM Tool Calling.
     - **From OpenTools API to Self-Hosted MCP (for specific tools):**
         - *Scenario:* Need more control over execution for a specific tool currently used via OpenTools API, or the tool is highly proprietary, or cost of OpenTools API for that specific tool becomes a factor at scale.
         - *Strategy:* Build a self-hosted MCP server for that specific tool and transition LLM/agent calls for that tool from the OpenTools API to this internal MCP server. Continue using OpenTools API for other general tools if beneficial.
-    - **From OpenTools API to General LLM Tool Calling (for specific tools):**
-        - *Scenario:* Need more control over a tool's execution currently accessed via OpenTools API, and prefer direct application-level integration rather than MCP server complexity for that particular tool.
-        - *Strategy:* Re-implement the tool interaction logic within the application, using General LLM Tool Calling mechanisms, and stop using OpenTools API for that specific tool.
     - **From Basic Context Management to Full MCP (Self-Hosted):**
         - *Scenario:* Ad-hoc context handling becomes unmanageable; a more structured, standardized approach to tool/data access for internal systems is needed.
         - *Strategy:* Formalize context schemas, implement dedicated self-hosted MCP servers for tools/data sources, and establish clear rules for context propagation and persistence.
@@ -1373,20 +1342,19 @@ Below is an illustration of combining A2A and MCP ([Image source](https://google
 ---
 #### Summary of Key Insights
 
-- This report has provided a detailed examination of Model Context Protocol (MCP), Agent-to-Agent (A2A) communication, General LLM Tool Calling, and the OpenTools API as critical integration patterns for advanced GenAI systems.
+- This report has provided a detailed examination of Model Context Protocol (MCP), Agent-to-Agent (A2A) communication and the OpenTools API as critical integration patterns for advanced GenAI systems.
 - MCP excels at standardizing agent-to-tool communication for *your self-hosted tools* and managing rich, persistent context from *your systems*.
 - A2A is designed for complex, direct communication and collaboration between independent AI agents, potentially from different vendors, emphasizing task delegation and interoperability.
-- General LLM Tool Calling offers a straightforward, LLM-native way for a single LLM to interact with external functions, where *your application code defines and executes the tool*.
 - The OpenTools API acts as a higher-level abstraction, specifically as an MCP client for a *managed registry of tools*, simplifying LLM access and handling tool execution, and can be integrated into broader AI workflows (e.g., with IBM watsonx.ai).
 - The choice of approach depends heavily on specific system requirements regarding control over tools and data, context needs, agent interaction complexity, desire for managed services, and development effort.
 - Hybrid approaches, combining the strengths of these patterns, are often the most effective for sophisticated GenAI applications.
 - Adhering to best practices in optimization, troubleshooting, and production considerations is crucial for building robust, scalable, and maintainable systems.
 
 ---
+
 </details>
 
 #### Future Outlook and Recommendations
-
 - **Emerging Standards and Abstractions:**
     - The field of GenAI integration is rapidly evolving. MCP and A2A represent significant steps towards standardization at the protocol level.
     - Services like the OpenTools API demonstrate a trend towards higher-level abstractions that simplify access to these underlying capabilities.
