@@ -327,7 +327,7 @@
   )
 
   # LLM for generation
-  llm = ChatGoogleGenerativeAI(model="gemini-pro", temperature=0.5)
+  llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0.5)
 
   # Build BM25 retriever for hybrid search
   bm25_retriever = BM25Retriever.from_documents(documents, k=4)
@@ -419,7 +419,7 @@
       docs = hybrid_retrieve_func(question, k=k, alpha=alpha)
       context_text = "..." # Format documents into a string
       prompt = prompt_template.format(context=context_text, question=question)
-      response = model.invoke(prompt)
+      response = llm.invoke(prompt)
       # ...
   ```
 
@@ -431,7 +431,7 @@
   from langchain.agents import AgentExecutor, create_react_agent
 
   tools = [StructuredTool.from_function(hybrid_retrieve)]
-  agent = create_react_agent(llm=model, tools=tools, prompt=hub.pull("hwchase17/react"))
+  agent = create_react_agent(llm=llm, tools=tools, prompt=hub.pull("hwchase17/react"))
   agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 
   # Invoke for each question
