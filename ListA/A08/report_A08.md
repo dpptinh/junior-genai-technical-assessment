@@ -276,12 +276,7 @@ The conceptual architecture is based on information from [modelcontextprotocol.i
 ---
 ## Agent-to-Agent (A2A) Communication
 ---
-### A2A Communication Detailed Guide
-<details - open>
-<summary>Exploring Patterns, Frameworks, and Implementation of A2A</summary>
-
----
-#### A2A Communication Patterns
+### A2A Communication Patterns
 <details - open>
 <summary>Understanding Agent-to-Agent Communication Mechanisms</summary>
 
@@ -334,7 +329,7 @@ The conceptual architecture is based on information from [modelcontextprotocol.i
 ---
 </details>
 
-#### A2A Coordination Mechanisms
+### A2A Coordination Mechanisms
 <details - open>
 <summary>Strategies for Managing Interactions and Workflows Among Agents</summary>
 
@@ -363,7 +358,7 @@ The conceptual architecture is based on information from [google-a2a](https://go
 ---
 </details>
 
-#### A2A Implementation Frameworks, Tools, and Libraries
+### A2A Implementation Frameworks, Tools, and Libraries
 <details - open>
 <summary>Overview of Technologies Supporting A2A System Development</summary>
 
@@ -398,7 +393,7 @@ The conceptual architecture is based on information from [google-a2a](https://go
             A --📥 Feedback for revision (if needed) --> C
     ```
 
-**NOTE:** Assuming the Agents have been deployed locally, now call the Agents through API (localhost)
+**NOTE:** Each file corresponds to one agent. I'm currently hardcoding the functionalities for each agent. You can refactor the code to implement the functionality or tool individually for each agent.
 
 **Manager Agent (port 5000)**
 
@@ -656,7 +651,7 @@ print(r.json())
 ---
 </details>
 
-#### A2A Use Cases and Advantages
+### A2A Use Cases and Advantages
 <details - open>
 <summary>Scenarios Where A2A Offers Significant Benefits and Its Key Strengths</summary>
 
@@ -686,7 +681,7 @@ print(r.json())
 ---
 </details>
 
-#### A2A Scalability Considerations
+### A2A Scalability Considerations
 <details - open>
 <summary>Addressing Performance and Growth in Multi-Agent Systems</summary>
 
